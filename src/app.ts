@@ -18,7 +18,7 @@ connectDB();
 app.use("/user", userRoute);
 app.use("/", apiLimit, transactionRoute);
 
-const port = process.env.PORT || 4007;
+const port = process.env.PORT;
 app.listen(port, () => {
     console.log(`App running on http://localhost:${port}`)
 });

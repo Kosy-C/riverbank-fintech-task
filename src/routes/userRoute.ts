@@ -4,7 +4,7 @@ import { RegisterUser, verifyUser, UserLogin } from "../controller/userControlle
 const router = express.Router();
 
 router.post('/signup', RegisterUser);
-router.post('/verify/:id', verifyUser);
+router.get('/verify/:id', verifyUser);
 router.post('/login', UserLogin);
 
 export default router;

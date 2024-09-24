@@ -6,7 +6,7 @@ import { userAuth } from "../middleware/authorization";
 const router = express.Router();
 
 router.post("/create-transaction", userAuth, createTransaction);
-router.post("/get-transactions", userAuth, getTransactions);
+router.get("/get-transactions", userAuth, getTransactions);
 
 
 export default router;

@@ -1,47 +1,50 @@
-import { Request, Response } from "express";
-import { UserAttributes, UserInstance } from "../model/userModel";
-import { v4 as uuidv4 } from "uuid";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { GeneratePassword, GenerateSalt, GenerateSignature, option, UserLoginSchema, UserRegisterSchema, validatePassword } from "../utils/utility";
-import { emailHtml, GenerateOTP, mailSent } from "../utils/notification";
-import { FromAdminMail, userSubject } from "../DB.config";
-
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserLogin = exports.verifyUser = exports.RegisterUser = void 0;
+const userModel_1 = require("../model/userModel");
+const uuid_1 = require("uuid");
+const utility_1 = require("../utils/utility");
+const notification_1 = require("../utils/notification");
+const DB_config_1 = require("../DB.config");
 /**===================================== REGISTER USER ===================================== **/
-export const RegisterUser = async (req: Request, res: Response) => {
+const RegisterUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log('HOWFARRR')
+        console.log('HOWFARRR');
         const { email, password } = req.body;
-        const uuiduser = uuidv4();
-
-        const validateResult = UserRegisterSchema.validate(req.body, option);
+        const uuiduser = (0, uuid_1.v4)();
+        const validateResult = utility_1.UserRegisterSchema.validate(req.body, utility_1.option);
         if (validateResult.error) {
             return res.status(400).json({
                 Error: validateResult.error.details[0].message,
             });
         }
-        
         // Check if the user already exists
-        const existingUser = await UserInstance.findOne({
+        const existingUser = yield userModel_1.UserInstance.findOne({
             where: { email: email },
-        }) as unknown as UserAttributes;
-
+        });
         if (existingUser) {
             return res.status(400).json({
                 error: "User with the given email already exists",
             });
-        };
-
+        }
+        ;
         //Generate salt
-        const salt = await GenerateSalt();
-
-        const userPassword = await GeneratePassword(password, salt);
-
+        const salt = yield (0, utility_1.GenerateSalt)();
+        const userPassword = yield (0, utility_1.GeneratePassword)(password, salt);
         //Generate OTP
-        const { otp, expiry } = GenerateOTP();
-
+        const { otp, expiry } = (0, notification_1.GenerateOTP)();
         //Create User
         if (!existingUser) {
-            const newUser = await UserInstance.create({
+            const newUser = yield userModel_1.UserInstance.create({
                 id: uuiduser,
                 email,
                 password: userPassword,
@@ -49,113 +52,91 @@ export const RegisterUser = async (req: Request, res: Response) => {
                 otp,
                 otp_expiry: expiry,
                 verified: false,
-            }) as unknown as UserAttributes;
-
+            });
             //send Email to user
-            const html = emailHtml(otp);
-            await mailSent(
-                FromAdminMail,
-                email,
-                userSubject,
-                html
-            );
-
+            const html = (0, notification_1.emailHtml)(otp);
+            yield (0, notification_1.mailSent)(DB_config_1.FromAdminMail, email, DB_config_1.userSubject, html);
             //Generate a signature for user
-            let signature = await GenerateSignature({
+            let signature = yield (0, utility_1.GenerateSignature)({
                 id: newUser.id,
                 email: newUser.email,
                 verified: newUser.verified,
             });
-
             return res.status(201).json({
                 id: newUser.id,
-                message:
-                    "User created successfully. Check your email for OTP verification",
+                message: "User created successfully. Check your email for OTP verification",
                 signature,
                 verified: newUser.verified,
             });
         }
-    } catch (err) {
+    }
+    catch (err) {
         res.status(500).json({
             error: "Internal server Error", err,
             route: "/user/signup",
         });
     }
-};
-
+});
+exports.RegisterUser = RegisterUser;
 /**===================================== VERIFY USER ===================================== **/
-export const verifyUser = async (req: Request, res: Response) => {
+const verifyUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-
         // Find the user by ID
-        const user = await UserInstance.findOne({
+        const user = yield userModel_1.UserInstance.findOne({
             where: { id: id },
-        }) as unknown as UserAttributes;
-
+        });
         if (!user) {
             return res.status(404).json({
                 error: "User with ID not found",
             });
         }
-    
         // Check if the user is already verified
         if (user.verified === true) {
             return res.status(400).json({
                 error: "User is already verified",
             });
         }
-
         // Update the user as verified
-        await UserInstance.update({ verified: true }, { where: { id: id } });
-
+        yield userModel_1.UserInstance.update({ verified: true }, { where: { id: id } });
         return res.status(200).json({
             message: "Email verification successful"
         });
-    } catch (err) {
+    }
+    catch (err) {
         res.status(500).json({
             error: "Internal server error",
             route: "/user/verify/:id",
         });
     }
-};
-
+});
+exports.verifyUser = verifyUser;
 /**===================================== LOGIN USER ===================================== **/
-export const UserLogin = async (req: JwtPayload, res: Response) => {
+const UserLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
-
-        const validateResult = UserLoginSchema.validate(req.body, option);
+        const validateResult = utility_1.UserLoginSchema.validate(req.body, utility_1.option);
         if (validateResult.error) {
             return res.status(400).json({
                 Error: validateResult.error.details[0].message,
             });
         }
-
         //check if the User exist
-        const User = await UserInstance.findOne({
+        const User = yield userModel_1.UserInstance.findOne({
             where: { email: email },
-        }) as unknown as UserAttributes;
-
+        });
         if (User) {
             //Validate password
-            const isValidPassword = await validatePassword(
-                password,
-                User.password,
-                User.salt
-            );
-
+            const isValidPassword = yield (0, utility_1.validatePassword)(password, User.password, User.salt);
             if (isValidPassword) {
                 //Generate signature for user
-                let signature = await GenerateSignature({
+                let signature = yield (0, utility_1.GenerateSignature)({
                     id: User.id,
                     email: User.email,
                     verified: User.verified,
                 });
-
                 // Example: Set a cookie with the token
                 res.cookie("token", signature);
-
                 return res.status(200).json({
                     message: "Login Successful",
                     signature,
@@ -163,7 +144,8 @@ export const UserLogin = async (req: JwtPayload, res: Response) => {
                     email: User.email,
                     verified: User.verified,
                 });
-            } else {
+            }
+            else {
                 res.status(400).json({
                     Error: "Wrong email or password",
                 });
@@ -172,10 +154,12 @@ export const UserLogin = async (req: JwtPayload, res: Response) => {
         return res.status(404).json({
             Error: `User with ${email} not found`,
         });
-    } catch (err) {
+    }
+    catch (err) {
         res.status(500).json({
             Error: "Internal server error", err,
             route: "/user/login",
         });
     }
-};
+});
+exports.UserLogin = UserLogin;

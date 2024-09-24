@@ -13,7 +13,7 @@ export const option = {
 
 export const UserRegisterSchema = Joi.object().keys({
     email: Joi.string().required(),
-    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')),
+    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required(),
 });
 
 export const UserLoginSchema = Joi.object().keys({
@@ -23,7 +23,7 @@ export const UserLoginSchema = Joi.object().keys({
 });
 
 export const TransactionSchema = Joi.object().keys({
-    amount: Joi.number,
+    amount: Joi.number(),
     recipient_account_number: Joi.string(), 
     sender_account_number: Joi.string(),
     description: Joi.string(),

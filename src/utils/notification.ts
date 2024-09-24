@@ -1,46 +1,49 @@
-import { GMAIL_USER, GMAIL_PASS, FromAdminMail, userSubject } from "../DB.config"
+import { FromAdminMail, userSubject } from "../DB.config"
 import nodemailer from "nodemailer";
- 
-export const GenerateOTP = ()=>{
+
+require('dotenv').config();
+
+export const GenerateOTP = () => {
     const otp = Math.floor(Math.random() * 900000);
-  
+
     const expiry = new Date();
-      expiry.setTime(new Date().getTime() + (30 * 60 * 1000))   
-      /*this shows we want it to expire in 30 mins, but first convert it from miliseconds to mins */
-      return {otp, expiry};
-  };
+    expiry.setTime(new Date().getTime() + (30 * 60 * 1000))
+    /*this shows we want it to expire in 30 mins, but first convert it from miliseconds to mins */
+    return { otp, expiry };
+};
 
 const transport = nodemailer.createTransport({
-    service: "gmail",
+    service: 'gmail',
+   host:"smtp.gmail.com",
+   port:587,
+   secure:false,
     auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_PASS,
+     
+      user:  process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
+      
     },
-    tls: {
-      rejectUnauthorized: false,
-    },
-});
-
+  });
 export const mailSent = async (
     from: string,
     to: string,
     subject: string,
     html: string
-  ) => {
+) => {
     try {
-      const response = await transport.sendMail({
-        from: FromAdminMail,
-        to,
-        subject: userSubject,
-        html,
-      });
-      return response;
+        const response = await transport.sendMail({
+            from: FromAdminMail,
+            to,
+            subject: userSubject,
+            html,
+        });
+        return response;
     } catch (err) {
-      console.log(err);
+        console.log(err);
     }
 };
 
-export const emailHtml = (otp: number):string => {
+export const emailHtml = (otp: number): string => {
     let response = `
     <div style = "max-width:700px; 
         margin:auto; 

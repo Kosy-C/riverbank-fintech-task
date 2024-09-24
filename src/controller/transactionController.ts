@@ -63,15 +63,10 @@ export const createTransaction = async (req: JwtPayload, res: Response, next: Ne
 /**===================================== VIEW/GET ALL TRANSACTION ===================================== **/
 export const getTransactions = async (req: JwtPayload, res: Response, next: NextFunction) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
+        const { page, limit } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
 
-        // const transactions = await TransactionInstance.findAll({
-        //   offset: page * size,
-        // offset: page * size,
-        //   limit: size, include: { model: UserInstance, as: "user" }
-        // });
-        const transactions = await TransactionInstance.findAll({
+        const transactions = await TransactionInstance.findAndCountAll({
             where: { userId: req.user.id },
             limit: Number(limit),
             offset,
